@@ -1,0 +1,276 @@
+from whoosh.fields import SchemaClass,Schema, TEXT, KEYWORD, ID, STORED
+import os,os.path
+from whoosh import index
+from collections import deque
+import urllib.request
+from bs4 import BeautifulSoup,Comment
+import re
+import docx
+import time
+import docx2txt
+from time import strptime
+from datetime import datetime
+import datetime
+from pdfminer.layout import LAParams, LTTextBox, LTTextLine
+from pdfminer.pdfparser import PDFParser, PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import PDFPageAggregator
+def remove_non_ascii(text):
+	return ''.join([i if ord(i) < 128 else ' ' for i in text])
+def from_doc_func(url):
+	download_url = url
+	new_f = urllib.request.urlopen(download_url)
+	length_downloadfile = new_f.headers['Content-length']
+	y = int(length_downloadfile)
+	if y > 1000000:
+		return "sravan"
+	ran_file = urllib.request.URLopener()
+	ran_file.retrieve(download_url,"rand.doc")
+	text = docx2txt.process("rand.doc")
+	value = remove_non_ascii(text)
+	value = value.replace('\n',' ')
+	value = re.sub('_+',' ',value)
+	value = value.replace('\t',' ')
+	#value = value.replace('/',' ')
+	value = value.replace('\n',' ')
+	value = re.sub(' +',' ',value)
+	#print(doc)
+	#print(value)
+	return value
+def from_docx_func(url):
+	download_url = url
+	new_f = urllib.request.urlopen(download_url)
+	length_downloadfile = new_f.headers['Content-length']
+	y = int(length_downloadfile)
+	if y > 1000000:
+		return "sravan"
+	ran_file = urllib.request.URLopener()
+	ran_file.retrieve(download_url,"rand.docx")
+	text = docx2txt.process("rand.docx")
+	value = remove_non_ascii(text)
+	value = value.replace('\n',' ')
+	value = re.sub('_+',' ',value)
+	value = value.replace('\t',' ')
+	#value = value.replace('/',' ')
+	value = value.replace('\n',' ')
+	value = re.sub(' +',' ',value)
+	#print("docs--------------------------------")
+	#print(value)
+	return value
+def pdf_func(url):
+	f = open('temp.txt','w')
+	download_url = "http://shilloi.iitg.ernet.in/~establishment/Forms/pdf/book-SenateHall.pdf"
+	download_url = url
+	new_f = urllib.request.urlopen(download_url)
+	length_downloadfile = new_f.headers['Content-length']
+	y = int(length_downloadfile)
+	if y > 1000000:
+		return "sravan"
+	ran_file = urllib.request.URLopener()
+	ran_file.retrieve(download_url,"rand.pdf")
+	fp = open('rand.pdf', 'rb')
+	parser = PDFParser(fp)
+	doc = PDFDocument()
+	parser.set_document(doc)
+	doc.set_parser(parser)
+	doc.initialize('')
+	rsrcmgr = PDFResourceManager()
+	laparams = LAParams()
+	device = PDFPageAggregator(rsrcmgr, laparams=laparams)
+	interpreter = PDFPageInterpreter(rsrcmgr, device)
+	for page in doc.get_pages():
+	    interpreter.process_page(page)
+	    layout = device.get_result()
+	    for lt_obj in layout:
+	        if isinstance(lt_obj, LTTextBox) or isinstance(lt_obj, LTTextLine):
+	        	text = lt_obj.get_text()
+	        	f.write(text)
+	fp.close()
+	os.remove('rand.pdf')
+	f.close()
+	f = open('temp.txt','r')
+	data = f.read()
+	f.close()
+	value = remove_non_ascii(data)
+	value = value.replace('\n',' ')
+	value = re.sub('_+',' ',value)
+	value = value.replace('\t',' ')
+	#value = value.replace('/',' ')
+	value = value.replace('\n',' ')
+	value = re.sub(' +',' ',value)
+	#print("docs--------------------------------")
+	#print(value)
+	return value
+def func(url):
+	#print("sravan")
+	html = urllib.request.urlopen(url)
+	soup = BeautifulSoup(html)
+	#print("sravan")
+	#doc_typer = soup.contents[0]
+	#doc_typer.extract()
+	comments = soup.findAll(text=lambda text:isinstance(text,Comment))
+	for comment in comments:
+		comment.extract()
+	scripts = soup.findAll('script')
+	for scri in scripts:
+		scri.extract()
+	doc_type = soup.findAll('!DOCTYPE')
+	for scri in doc_type:
+		scri.extract()
+	linked = soup.findAll('link')
+	for lin in linked:
+		lin.extract()
+	meta = soup.findAll('meta')
+	for lin in meta:
+		lin.extract()
+	texts = soup.find_all(text=True)
+	for t in texts:
+		newtext = t.replace("&nbsp;","")
+		t.replace_with(newtext)
+	value = soup.get_text()	
+	value = value.replace('\n',' ')
+	space = soup.findAll(text="&nbsp;")
+	for lin in space:
+		lin.extract()
+	value = value.replace('\t',' ')
+	value = re.sub(' +',' ',value)
+	#sravan = remove(value)
+	#value = value.replace('|','')
+
+	#print(value)
+	return value
+class schema(SchemaClass):
+	title = TEXT(stored=True)
+	url = ID(stored=True,unique=True)
+	content = TEXT(stored=True)
+g = open("new_text.txt","w")
+howle = datetime.datetime.now()
+howle = str(howle)
+g.write(howle)
+f = open("crawled.txt","r")
+if not os.path.exists("whoosh_indexes"):
+	os.mkdir("whoosh_indexes")
+ix = index.open_dir("whoosh_indexes")
+writer = ix.writer()
+data = f.read()
+q = deque([])
+w = deque([])
+for line in data.split('\n'):
+	q.append(line)
+	w.append(line)
+len_que = len(q)
+exe = ".exe"
+dat = ".dat"
+zippe = ".zip"
+doc = ".doc"
+bmp = ".bmp"
+jpg = ".jpg"
+pdf = ".pdf"
+docx = ".docx"
+not_neces = [exe,dat,zippe,doc,docx,jpg,pdf,bmp]
+new_links = deque([])
+for i in range(len_que):
+	try:
+		print(i)
+		k = 1
+		if len(q) > 0:
+			url = q.popleft()
+			g.write(url)
+		r = urllib.request.urlopen(url)
+		if r.headers['last-modified'] is not None:
+			last_modified = r.headers['last-modified']
+			last = last_modified
+			p = last.split(' ')
+			month = p[2]
+			month = int(strptime(month,"%b").tm_mon)
+			day = int(p[1])
+			year = int(p[3])
+			#last_time = datetime(year,month,day)
+		else:
+			last_modified = "sravan"
+		before_date_time = datetime.datetime.now() - datetime.timedelta(days=7)
+		s = str(before_date_time)
+		s = s.split(',')
+		s = s[0]
+		o = s.split('-')
+		new_r = o[2]
+		day = new_r.split(' ')
+		current_day = int(day[0])
+		current_month = int(o[1])
+		current_year = int(o[0])
+		#current_time = datetime(current_year,current_month,current_day)
+		if last_modified != "sravan":
+		#if last_time > current_time:
+			if year >= current_year:
+				if month >= current_month:
+					if day >= current_day:
+						k = 0
+		if k == 0:
+			r = urllib.request.urlopen(url)
+			soup = BeautifulSoup(r)
+			content_co = func(url)
+			title_co = soup.find("title")
+			if title_co is not None:
+				title_co = title_co.string
+				title_co = title_co.lower()
+			links = soup.find_all("a")
+			for link in links:
+				href = link.get("href")
+				p = urllib.parse.urljoin(url,href)
+				var = "iitg.ernet.in"
+				if var in p:
+					if p not in w:
+						new_links.append(p)
+			writer.update_document(url=url,content=content_co.lower(),title=title_co)
+	except:
+		gh = "sravan"
+len_newlinks = len(new_links)
+for i in range(len_newlinks):
+	print(i)
+	if(len(q)>0):
+		url = q.popleft()
+	extension = url[-4:]
+	extension_x = url[-5:]
+	if extension == ".pdf":
+		content_co = pdf_func(url)
+		if content_co == "sravan":
+			flag = 1
+	elif extension_x == ".docx":
+		content_co = from_docx_func(url)
+		if content_co == "sravan":
+			flag = 1
+	elif extension == ".doc":
+		content_co = from_doc_func(url)
+		if content_co == "sravan":
+			flag = 1
+	elif extension == ".zip" or extension == ".iso" or extension ==".exe" or extension == ".txt" or extension ==".jpg" or extension == ".gif":
+		p = url.split('/')
+		s = p[-1]
+		t = s.split('.')
+		w = t[0]
+		title_co = w
+		content_co = w
+		ziper = 1
+	else:
+		content_co = func(url)
+	r = urllib.request.urlopen(url)
+	soup = BeautifulSoup(r)
+	title_co = soup.find("title")
+	if title_co is not None:
+		if title_co.string is not None:
+			title_co = title_co.string
+			title_co = title_co.lower()
+		elif ziper == 1:
+			title_co=content_co
+		else:
+			title_co = "sravan"
+	title_co = str(title_co)
+	writer.add_document(url=url,title=title_co,content=content_co.lower())
+writer.commit()
+
+
+		
+
+
+
+

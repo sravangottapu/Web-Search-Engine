@@ -1,0 +1,94 @@
+<HTML>
+<head>
+<title>IITG Search Engine</title>
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+</head>
+<body>
+	<div class="row">
+	<div class="col-sm-5">&nbsp;&nbsp;</div>
+  	<div class="col-sm-7"><form class="form-inline" role="form" action="index.php",method="get">
+    <div class="form-group">
+      <input type="text" class="form-control" id="email" name="name" placeholder="Give Query">
+    </div>
+    <button type="submit" class="btn btn-default" name="Search">
+      <span class="glyphicon glyphicon-search"></span> Search
+    </button>
+  </form></div></div>
+
+
+</form>
+<?php 
+
+if(isset($_GET['Search']))
+{
+	if(isset($_GET['name']))
+	{
+		$data=$_GET['name']."\n";
+		#echo $data;
+		$fh_input=fopen("/home/sravan/crawl/input.txt","w");
+		fwrite($fh_input,$data);
+		fclose($fh_input);
+
+		exec("python3 search_text.py < input.txt >output.txt");
+	}
+	$out = fopen("output.txt","r");
+	$count = 0;
+	while(!feof($out))
+	{
+		$outcontent=fgets($out);
+		if($count == 0)
+		{
+			?>
+			<center><a href="#"><?php echo $outcontent; echo "<br />"?> </a></center>
+			<?php
+		}
+		elseif($count%3==1)
+		{
+			$outcontent = strtoupper($outcontent);
+			?>
+			<div class="row">
+			<div class="col-sm-4">&nbsp;&nbsp;&nbsp;</div>
+			<div class="col-sm-8"><?php echo $outcontent;
+			echo"<br/>"; ?> 
+			</div></div>
+			<?php
+
+		}
+		elseif($count%3==2)
+		{
+			$outcontent = $outcontent;
+			?>
+			<div class="row">
+			<div class="col-sm-4">&nbsp;&nbsp;&nbsp;</div>
+			<div class="col-sm-8"><a href=$outcontent><?php echo $outcontent;
+			echo"<br/>"; ?> </a>
+			</div></div>
+			<?php
+
+		}
+		else
+		{?>
+			<div class="row">
+			<div class="col-sm-4">&nbsp;&nbsp;&nbsp;</div>
+			<div class="col-sm-8"><?php echo $outcontent;
+			echo"<br/>"; ?> 
+			</div></div>
+			<?php
+		}
+		$count++;
+	}
+
+
+}
+?>
+
+
+</body>
+
+</HTML>
